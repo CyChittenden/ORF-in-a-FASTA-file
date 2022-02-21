@@ -1,0 +1,81 @@
+---
+title: "ORF Function"
+author: "Cy Chittenden"
+date: "2/20/2022"
+output: html_document
+---
+
+```{r}
+#load required package
+require("seqinr")
+
+
+#Import fasta file
+#XXX <- read.fasta(file = "XXX.fasta")
+#XXX_seq <- XXX[[1]]
+
+COVID <- read.fasta(file = "sarscov2.fasta")
+COVID_seq <- COVID[[1]]
+```
+
+```{r}
+#Generate a vector of start positions of start codons
+startCodons <- function(seq){
+  startcodons <- numeric(0)
+  k <- 1
+  for(i in 1:(length(seq)-5)){
+    if ((seq[i] == "a") && (seq[i + 1] == "t") && (seq[i + 2] == "g")){
+      startcodons[k] <- i
+      k <- k+1
+    }
+  }
+  return(startcodons)
+}
+
+
+#Generate a vector positions of stop codons (last nucleotide)
+stopCodons <- function(seq){
+  stopcodons <-numeric(0)
+  k <- 1
+  for(i in 1:(length(seq)-2)){ 
+    if ((seq[i] == "t") && (seq[i + 1] == "a") && (seq[i + 2] == "a") || (seq[i] == "t") && (seq[i + 1] == "a") && (seq[i + 2] == "g") || (seq[i] == "t") && (seq[i + 1] == "g") && (seq[i + 2] == "a")){
+      stopcodons[k] <- i
+      k <- k+1
+    }
+        
+  }
+  return(stopcodons)
+}
+
+
+
+#Find ORF
+findORF <- function(seq, minLength){ 
+  startcodon <- startCodons(seq) 
+  stopcodon <- stopCodons(seq)
+  usedStop <- numeric(0) 
+  ORFs <- character(0) 
+  k <- 1 
+  for(i in startcodon){ 
+    for(j in stopcodon){ 
+      if(((j-i) %% 3 == 0) && (i < j)){
+        if(j %in% usedStop){ 
+          break
+        }else if((j-i) < minLength*3){ 
+          break
+        }else{
+            ORFs[k] <- paste(i, j+2, sep = " to ")
+            usedStop[k] <- j
+          k <- k + 1 
+          break 
+        }
+      }
+    }
+  }
+  return(ORFs)
+} 
+
+#minLength is the minimum length (bp) of the open reading frame that is wanted
+findORF(COVID_seq, 100)
+
+```
